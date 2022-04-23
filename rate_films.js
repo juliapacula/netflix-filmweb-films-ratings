@@ -30,7 +30,7 @@ fs.createReadStream('NetflixParsedViewingHistory.csv')
 
 async function scrape(films) {
     const browser = await puppeteer.launch({
-        headless: true,
+        headless: false,
         args: ["--window-size=1600,900"]
     });
 
@@ -49,14 +49,20 @@ async function scrape(films) {
         await page.goto("https://www.filmweb.pl");
         cookies = JSON.parse(fs.readFileSync('cookies.json').toString());
         await page.setCookie(...cookies);
+        await page.waitForSelector('#didomi-notice-agree-button');
+        await page.click('#didomi-notice-agree-button');
     } else {
         await page.goto("https://www.filmweb.pl/login");
+        await page.waitForSelector('#didomi-notice-agree-button');
         await page.click('#didomi-notice-agree-button');
+        await page.waitForSelector('.authButton--filmweb');
         await page.click('.authButton--filmweb');
         const login = JSON.parse(fs.readFileSync('login.json').toString());
         await materialInput('input[name=j_username]', login.username);
         await materialInput('input[name=j_password]', login.password);
+        await page.waitForSelector('.authButton--submit');
         await page.click('.authButton--submit');
+        await page.waitForTimeout(1000);
         cookies = await page.cookies();
         fs.writeFileSync("cookies.json", JSON.stringify(cookies));
     }
